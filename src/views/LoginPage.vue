@@ -9,8 +9,8 @@
       <div class="google-sso">
         <GoogleLogin
           :client-id="googleClientId"
-          @success="onGoogleSuccess"
-          @error="onGoogleError"
+          :callback="onGoogleSuccess"
+          :on-error="onGoogleError"
         >
           <template #default>
             <button class="google-btn">
@@ -27,6 +27,7 @@
 <script>
 import Login from '@/components/Login.vue';
 import { loginUser } from '@/logic/customLogin.js';
+import { handleGoogleSSO } from '@/logic/googleTokenExchange.js';
 
 export default {
   components: {
@@ -46,11 +47,20 @@ export default {
         console.error('Login failed:', error);
       }
     },
-    onGoogleSuccess(response) {
-      // Save login method and token
-      localStorage.setItem('loginMethod', 'google');
-      localStorage.setItem('googleToken', response.credential);
-      this.$router.push('/home');
+    async onGoogleSuccess(response) {
+      console.log('Google SSO Success:', response);
+      const result = await handleGoogleSSO(response.code? response.code : '');
+      if (result.success) {
+        console.log('Session Token:', result.sessionToken);
+        console.log('User Info:', result.user);
+        
+        // Save login method and token
+        localStorage.setItem('loginMethod', 'google');
+        localStorage.setItem('googleToken', result.sessionToken);
+      } else {
+        console.error('SSO Error:', result.error);
+      }
+      
     },
     onGoogleError(error) {
       console.error('Google SSO Error:', error);
